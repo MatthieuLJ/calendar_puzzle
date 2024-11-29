@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::piece::OrientedPiece;
 
 const NUM_LINES: usize = 6;
@@ -80,7 +82,8 @@ impl Board {
         }
     }
 
-    pub fn display(&self) {
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         // first is top line going clockwise
         // 0 = nothing
         // 1 = thin line
@@ -205,6 +208,6 @@ impl Board {
             drawing.push('\n');
         }
 
-        println!("{}", &drawing);
+        write!(f, "{}", drawing)
     }
 }

@@ -32,6 +32,5 @@ fn main() {
 
 
     println!("Got a new board:");
-    board.display();
-    //println!("or\n {:?}", board);
+    println!("{}", board);
 }
