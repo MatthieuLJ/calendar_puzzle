@@ -29,15 +29,16 @@ impl Board {
         return true;
     }
 
-    pub fn place_piece_on_top_left(&self, piece: &OrientedPiece, piece_id: char) -> Option<Board> {
+    pub fn place_piece_on_top_left(&self, piece: &OrientedPiece) -> Option<Board> {
         // first find the top-left empty space on the board
         let mut top_left: (usize, usize) = (0, 0);
 
-        for i in 0..NUM_LINES {
+        '_outer : for i in 0..NUM_LINES {
             for j in usize::from(piece.top_index)..NUM_COLUMNS {
-                if self.table[j][i] == '0' {
+                if self.table[i][j] == '0' {
                     top_left.0 = i;
                     top_left.1 = j;
+                    break '_outer;
                 }
             }
         }
@@ -48,7 +49,7 @@ impl Board {
         let piece_cols = piece.pattern[0].len();
         for i in 0..piece_rows {
             for j in 0..piece_cols {
-                if self.table[offset.0 + j][offset.1 + i] != '0' && piece.pattern[j][i] != '0' {
+                if self.table[offset.0 + i][offset.1 + j] != '0' && piece.pattern[i][j] != '0' {
                     return None;
                 }
             }
@@ -57,7 +58,9 @@ impl Board {
         let mut new_board = self.clone();
         for i in 0..piece_rows {
             for j in 0..piece_cols {
-                new_board.table[offset.0 + j][offset.1 + i] = piece_id;
+                if piece.pattern[i][j] != '0' {
+                    new_board.table[offset.0 + i][offset.1 + j] = piece.pattern[i][j];
+                }
             }
         }
 
