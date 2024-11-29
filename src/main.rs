@@ -2,5 +2,8 @@ pub mod board;
 pub mod piece;
 
 fn main() {
-    println!("Hello, world!");
+    let board = board::Board::new();
+
+    println!("Got a new board:");
+    board.display();
 }
