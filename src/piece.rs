@@ -8,6 +8,10 @@ pub struct Piece {
     pub possible_pieces: Vec<OrientedPiece>,
 }
 
+pub fn all_pieces() -> Vec<char> {
+    vec!['t','u','z','i','y','l','j','v','q','f']
+}
+
 pub fn get_piece(id: char) -> Option<Piece> {
     let mut result = Piece {
         id,
