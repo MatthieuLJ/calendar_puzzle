@@ -20,6 +20,80 @@ impl Board {
         new_board
     }
 
+    // week_day is 1 for Monday, 7 for Sunday
+    pub fn set_date(&mut self, week_day: u8, day: u8, month: u8) {
+        let week_coords: (usize, usize) = match week_day {
+            1 => (7, 0),
+            2 => (8, 0),
+            3 => (7, 1),
+            4 => (7, 2),
+            5 => (7, 3),
+            6 => (8, 3),
+            7 => (8, 4),
+            _ => {
+                panic!("week_day should be from 1 (Monday) to 7 (Sunday)")
+            }
+        };
+        self.table[week_coords.0][week_coords.1] = 'X';
+
+        let day_coords: (usize, usize) = match day {
+            1 => (4, 0),
+            2 => (5, 0),
+            3 => (6, 0),
+            4 => (1, 1),
+            5 => (2, 1),
+            6 => (3, 1),
+            7 => (4, 1),
+            8 => (5, 1),
+            9 => (6, 1),
+            10 => (1, 2),
+            11 => (2, 2),
+            12 => (3, 2),
+            13 => (4, 2),
+            14 => (7, 5),
+            15 => (6, 2),
+            16 => (1, 3),
+            17 => (2, 3),
+            18 => (3, 3),
+            19 => (4, 3),
+            20 => (5, 3),
+            21 => (6, 3),
+            22 => (1, 4),
+            23 => (2, 4),
+            24 => (3, 4),
+            25 => (4, 4),
+            26 => (5, 4),
+            27 => (6, 4),
+            28 => (4, 5),
+            29 => (5, 5),
+            30 => (6, 5),
+            31 => (5, 2),
+            _ => {
+                panic!("day should be between 1 and 31")
+            }
+        };
+        self.table[day_coords.0][day_coords.1] = 'X';
+
+        let month_coords: (usize, usize) = match month {
+            1 => (0, 0),
+            2 => (1, 0),
+            3 => (2, 0),
+            4 => (3, 0),
+            5 => (0, 1),
+            6 => (0, 2),
+            7 => (0, 3),
+            8 => (0, 4),
+            9 => (0, 5),
+            10 => (1, 5),
+            11 => (2, 5),
+            12 => (3, 5),
+            _ => {
+                panic!("month should be between 1 and 12")
+            }
+        };
+        self.table[month_coords.0][month_coords.1] = 'X';
+    }
+
     pub fn is_full(&self) -> bool {
         for row in self.table {
             for space in row {
