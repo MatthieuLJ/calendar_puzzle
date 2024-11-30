@@ -109,7 +109,7 @@ impl Board {
         // first find the top-left empty space on the board
         let mut top_left: (usize, usize) = (0, 0);
 
-        '_outer : for i in 0..NUM_LINES {
+        '_outer: for i in 0..NUM_LINES {
             for j in usize::from(piece.top_index)..NUM_COLUMNS {
                 if self.table[i][j] == '0' {
                     top_left.0 = i;
@@ -155,6 +155,7 @@ impl Board {
             }
         }
     }
+}
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
@@ -204,29 +205,37 @@ impl fmt::Display for Board {
         for i in 0..NUM_LINES + 1 {
             for j in 0..NUM_COLUMNS + 1 {
                 match (i, j) {
-                    (0, 0) => { // top left
-                        lines[i][j] = get_lines(('X', 'X', self.table[i][j],'X'));
+                    (0, 0) => {
+                        // top left
+                        lines[i][j] = get_lines(('X', 'X', self.table[i][j], 'X'));
                     }
-                    (0, NUM_COLUMNS) => { // top right
-                        lines[i][j] = get_lines(('X', 'X', 'X',self.table[i][j-1]));
+                    (0, NUM_COLUMNS) => {
+                        // top right
+                        lines[i][j] = get_lines(('X', 'X', 'X', self.table[i][j - 1]));
                     }
-                    (NUM_LINES, 0) => { // bottom left
+                    (NUM_LINES, 0) => {
+                        // bottom left
                         lines[i][j] = get_lines(('X', self.table[i - 1][j], 'X', 'X'));
                     }
-                    (NUM_LINES, NUM_COLUMNS) => { //bottom right
+                    (NUM_LINES, NUM_COLUMNS) => {
+                        //bottom right
                         lines[i][j] = get_lines((self.table[i - 1][j - 1], 'X', 'X', 'X'));
                     }
-                    (NUM_LINES, _) => { // bottom
+                    (NUM_LINES, _) => {
+                        // bottom
                         lines[i][j] =
                             get_lines((self.table[i - 1][j - 1], self.table[i - 1][j], 'X', 'X'));
                     }
-                    (0, _) => { // top
+                    (0, _) => {
+                        // top
                         lines[i][j] = get_lines(('X', 'X', self.table[i][j], self.table[i][j - 1]));
                     }
-                    (_, 0) => { // left
+                    (_, 0) => {
+                        // left
                         lines[i][j] = get_lines(('X', self.table[i - 1][j], self.table[i][j], 'X'));
                     }
-                    (_, NUM_COLUMNS) => { // right
+                    (_, NUM_COLUMNS) => {
+                        // right
                         lines[i][j] =
                             get_lines((self.table[i - 1][j - 1], 'X', 'X', self.table[i][j - 1]));
                     }
@@ -284,4 +293,9 @@ impl fmt::Display for Board {
 
         write!(f, "{}", drawing)
     }
+}
+
+#[cfg(test)]
+mod test {
+
 }
