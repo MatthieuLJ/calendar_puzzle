@@ -1,6 +1,7 @@
 use chrono::Datelike;
 use dateparser::parse;
 use std::io;
+use std::time::Instant;
 
 mod board;
 mod piece;
@@ -13,10 +14,15 @@ fn main() {
 
     board.set_date(week_day, day, month);
 
+    let now = Instant::now();
+
     let success = try_placing_pieces(&mut board, &mut pieces);
     if !success {
         println!("Could not find a solution!");
     }
+
+    let elapsed = now.elapsed();
+    println!("Solved in {} ms", elapsed.as_millis());
 }
 
 fn get_date() -> (u8, u8, u8) {
@@ -44,6 +50,8 @@ fn get_date() -> (u8, u8, u8) {
     }
 }
 
+const CHECK_FOR_SOLVABILITY_THRESH : usize = 5;
+
 fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bool {
     if b.is_full() {
         if pieces.is_empty() {
@@ -61,6 +69,11 @@ fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bo
             for oriented_piece in orientations {
                 if b.place_piece_on_top_left(&oriented_piece) {
                     //println!("Now:\n {:?}", b.table);
+
+                    if pieces.len() <= CHECK_FOR_SOLVABILITY_THRESH && !b.is_solvable() {
+                        b.remove_piece(this_piece);
+                        continue;
+                    }
 
                     pieces.remove(piece_index);
                     if try_placing_pieces(b, pieces) {
