@@ -16,10 +16,7 @@ fn main() {
 
     let now = Instant::now();
 
-    let success = try_placing_pieces(&mut board, &mut pieces);
-    if !success {
-        println!("Could not find a solution!");
-    }
+    let _ = try_placing_pieces(&mut board, &mut pieces);
 
     let elapsed = now.elapsed();
     println!("Solved in {} ms", elapsed.as_millis());
@@ -58,7 +55,7 @@ fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bo
             println!("Found a solution:\n{}", b);
             return true;
         } else {
-            return false;
+            panic!("Board is full but there are still pieces to place");
         }
     } else {
         for piece_index in 0..pieces.len() {
@@ -69,6 +66,12 @@ fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bo
             for oriented_piece in orientations {
                 if b.place_piece_on_top_left(&oriented_piece) {
                     //println!("Now:\n {:?}", b.table);
+
+                    if b.is_full() {
+                        println!("Found a solution:\n{}", b);
+                        b.remove_piece(this_piece);
+                        continue;
+                    }
 
                     if pieces.len() <= CHECK_FOR_SOLVABILITY_THRESH && !b.is_solvable() {
                         b.remove_piece(this_piece);

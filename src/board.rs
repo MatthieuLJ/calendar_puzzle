@@ -105,7 +105,7 @@ impl Board {
         true
     }
 
-    fn find_first_free_space(&self, left_offset: usize) -> (usize, usize) {
+    fn find_first_free_space(&self, left_offset: usize) -> Result<(usize, usize),()> {
         // first find the top-left empty space on the board
         let mut top_left: (usize, usize) = (0, 0);
 
@@ -120,14 +120,17 @@ impl Board {
         }
         // let's check if we actually found an empty space
         if top_left == (0, 0) && self.table[0][0] != '0' {
-            panic!("Did not find an empty space when asked for one");
+            return Err(());
         }
 
-        top_left
+        Ok(top_left)
     }
 
     pub fn place_piece_on_top_left(&mut self, piece: &OrientedPiece) -> bool {
-        let top_left = self.find_first_free_space(usize::from(piece.top_index));
+        let top_left = match self.find_first_free_space(usize::from(piece.top_index)) {
+            Ok(r) => r,
+            Err(_) => { return false;}
+        };
 
         let offset: (usize, usize) = (top_left.0 - usize::from(piece.top_index), top_left.1);
 
@@ -171,7 +174,7 @@ impl Board {
         let mut area_size = 0;
 
         while !self.is_full() {
-            let top_left = self.find_first_free_space(0);
+            let top_left = self.find_first_free_space(0).unwrap();
             coords.push_back(top_left);
             while !coords.is_empty() {
                 let current = coords.pop_front().unwrap();
