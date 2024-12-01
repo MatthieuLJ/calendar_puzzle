@@ -126,7 +126,7 @@ impl Board {
         top_left
     }
 
-    pub fn place_piece_on_top_left(&self, piece: &OrientedPiece) -> Option<Board> {
+    pub fn place_piece_on_top_left(&mut self, piece: &OrientedPiece) -> bool {
         let top_left = self.find_first_free_space(usize::from(piece.top_index));
 
         let offset: (usize, usize) = (top_left.0 - usize::from(piece.top_index), top_left.1);
@@ -135,22 +135,24 @@ impl Board {
         let piece_cols = piece.pattern[0].len();
         for j in 0..piece_rows {
             for i in 0..piece_cols {
-                if self.table[offset.1 + j][offset.0 + i] != '0' && piece.pattern[j][i] != '0' {
-                    return None;
+                if piece.pattern[j][i] != '0' && (offset.0 + i >= NUM_COLUMNS || offset.1 + j >= NUM_LINES) {
+                    return false;
+                }
+                if piece.pattern[j][i] != '0' && self.table[offset.1 + j][offset.0 + i] != '0' {
+                    return false;
                 }
             }
         }
 
-        let mut new_board = self.clone();
         for j in 0..piece_rows {
             for i in 0..piece_cols {
-                if piece.pattern[i][j] != '0' {
-                    new_board.table[offset.1 + j][offset.0 + i] = piece.pattern[j][i];
+                if piece.pattern[j][i] != '0' {
+                    self.table[offset.1 + j][offset.0 + i] = piece.pattern[j][i];
                 }
             }
         }
 
-        Some(new_board)
+        true
     }
 
     pub fn remove_piece(&mut self, piece_id: char) {
@@ -468,5 +470,60 @@ mod test {
                 ['0', '0', 'f', 'f', 'f', '0', '0', '0', 'X'],
             ]
         );
+    }
+
+    #[test]
+    fn tricky_placement_offset() {
+        let mut b: Board = Board::new();
+        b.set_date(1, 1, 1);
+        b.place_piece_on_top_left(&OrientedPiece {
+            pattern: [
+                ['0', 'f', '0', '0', '0'],
+                ['f', 'f', 'f', '0', '0'],
+                ['0', '0', 'f', '0', '0'],
+                ['0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0'],
+            ],
+            top_index: 1,
+        });
+        b.place_piece_on_top_left(&OrientedPiece {
+            pattern: [
+                ['l', 'l', '0', '0', '0'],
+                ['0', 'l', '0', '0', '0'],
+                ['0', 'l', '0', '0', '0'],
+                ['0', 'l', '0', '0', '0'],
+                ['0', '0', '0', '0', '0'],
+            ],
+            top_index: 0,
+        });
+        b.place_piece_on_top_left(&OrientedPiece {
+            pattern: [
+                ['0', 'q', 'q', '0', '0'],
+                ['q', 'q', 'q', '0', '0'],
+                ['0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0'],
+            ],
+            top_index: 1,
+        });
+        assert_eq!(b.table, [
+            ['X', 'f', 'l', 'l', 'X', 'q', 'q', 'X', '0'],
+            ['f', 'f', 'f', 'l', 'q', 'q', 'q', '0', '0'],
+            ['0', '0', 'f', 'l', '0', '0', '0', '0', '0'],
+            ['0', '0', '0', 'l', '0', '0', '0', '0', '0'],
+            ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+            ['0', '0', '0', '0', '0', '0', '0', '0', 'X'],
+        ]);
+        assert_eq!(b.place_piece_on_top_left(&OrientedPiece {
+            pattern: [
+                ['0', 'y', '0', '0', '0'],
+                ['y', 'y', '0', '0', '0'],
+                ['0', 'y', '0', '0', '0'],
+                ['0', 'y', '0', '0', '0'],
+                ['0', '0', '0', '0', '0'],
+            ],
+            top_index: 1,
+        }), true);
+
     }
 }
