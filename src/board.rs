@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::VecDeque, fmt};
 
 use crate::piece::OrientedPiece;
 
@@ -34,7 +34,7 @@ impl Board {
                 panic!("week_day should be from 1 (Monday) to 7 (Sunday)")
             }
         };
-        self.table[week_coords.0][week_coords.1] = 'X';
+        self.table[week_coords.1][week_coords.0] = 'X';
 
         let day_coords: (usize, usize) = match day {
             1 => (4, 0),
@@ -72,7 +72,7 @@ impl Board {
                 panic!("day should be between 1 and 31")
             }
         };
-        self.table[day_coords.0][day_coords.1] = 'X';
+        self.table[day_coords.1][day_coords.0] = 'X';
 
         let month_coords: (usize, usize) = match month {
             1 => (0, 0),
@@ -91,7 +91,7 @@ impl Board {
                 panic!("month should be between 1 and 12")
             }
         };
-        self.table[month_coords.0][month_coords.1] = 'X';
+        self.table[month_coords.1][month_coords.0] = 'X';
     }
 
     pub fn is_full(&self) -> bool {
@@ -102,40 +102,50 @@ impl Board {
                 }
             }
         }
-        return true;
+        true
     }
 
-    pub fn place_piece_on_top_left(&self, piece: &OrientedPiece) -> Option<Board> {
+    fn find_first_free_space(&self, left_offset: usize) -> (usize, usize) {
         // first find the top-left empty space on the board
         let mut top_left: (usize, usize) = (0, 0);
 
-        '_outer: for i in 0..NUM_LINES {
-            for j in usize::from(piece.top_index)..NUM_COLUMNS {
-                if self.table[i][j] == '0' {
+        '_outer: for j in 0..NUM_LINES {
+            for i in left_offset..NUM_COLUMNS {
+                if self.table[j][i] == '0' {
                     top_left.0 = i;
                     top_left.1 = j;
                     break '_outer;
                 }
             }
         }
+        // let's check if we actually found an empty space
+        if top_left == (0, 0) && self.table[0][0] != '0' {
+            panic!("Did not find an empty space when asked for one");
+        }
+
+        top_left
+    }
+
+    pub fn place_piece_on_top_left(&self, piece: &OrientedPiece) -> Option<Board> {
+        let top_left = self.find_first_free_space(usize::from(piece.top_index));
 
         let offset: (usize, usize) = (top_left.0 - usize::from(piece.top_index), top_left.1);
 
         let piece_rows: usize = piece.pattern.len();
         let piece_cols = piece.pattern[0].len();
-        for i in 0..piece_rows {
-            for j in 0..piece_cols {
-                if self.table[offset.0 + i][offset.1 + j] != '0' && piece.pattern[i][j] != '0' {
+        for j in 0..piece_rows {
+            for i in 0..piece_cols {
+                if self.table[offset.1 + j][offset.0 + i] != '0' && piece.pattern[j][i] != '0' {
                     return None;
                 }
             }
         }
 
         let mut new_board = self.clone();
-        for i in 0..piece_rows {
-            for j in 0..piece_cols {
+        for j in 0..piece_rows {
+            for i in 0..piece_cols {
                 if piece.pattern[i][j] != '0' {
-                    new_board.table[offset.0 + i][offset.1 + j] = piece.pattern[i][j];
+                    new_board.table[offset.1 + j][offset.0 + i] = piece.pattern[j][i];
                 }
             }
         }
@@ -144,16 +154,70 @@ impl Board {
     }
 
     pub fn remove_piece(&mut self, piece_id: char) {
-        let num_rows: usize = self.table.len();
-        let num_cols: usize = self.table[0].len();
-
-        for i in 0..num_rows {
-            for j in 0..num_cols {
+        for j in 0..NUM_LINES {
+            for i in 0..NUM_COLUMNS {
                 if self.table[j][i] == piece_id {
                     self.table[j][i] = '0';
                 }
             }
         }
+    }
+
+    pub fn is_solvable(&mut self) -> bool {
+        let mut coords: VecDeque<(usize, usize)> = VecDeque::new();
+        let mut area: u8 = 1;
+        let mut area_size = 0;
+
+        while !self.is_full() {
+            let top_left = self.find_first_free_space(0);
+            coords.push_back(top_left);
+            while !coords.is_empty() {
+                let current = coords.pop_front().unwrap();
+                if self.table[current.1][current.0] != '0' {
+                    continue;
+                }
+                if current.0 > 0 && self.table[current.1][current.0 - 1] == '0' {
+                    coords.push_back((current.0 - 1, current.1));
+                }
+                if current.0 < NUM_COLUMNS - 1 && self.table[current.1][current.0 + 1] == '0' {
+                    coords.push_back((current.0 + 1, current.1));
+                }
+                if current.1 > 0 && self.table[current.1 - 1][current.0] == '0' {
+                    coords.push_back((current.0, current.1 - 1));
+                }
+                if current.1 < NUM_LINES - 1 && self.table[current.1 + 1][current.0] == '0' {
+                    coords.push_back((current.0, current.1 + 1));
+                }
+                self.table[current.1][current.0] = char::from_digit(area as u32, 10).unwrap();
+                area_size += 1;
+            }
+            if area_size % 5 != 0 {
+                // clean-up
+                loop {
+                    self.remove_piece(char::from_digit(area as u32, 10).unwrap());
+                    area -= 1;
+                    if area == 0 {
+                        break;
+                    }
+                }
+                return false;
+            }
+
+            area += 1;
+            area_size = 0;
+            if area == 10 {
+                panic!("Did we really divide the boards in so many areas?")
+            }
+        }
+        // clean-up
+        loop {
+            self.remove_piece(char::from_digit(area as u32, 10).unwrap());
+            area -= 1;
+            if area == 0 {
+                break;
+            }
+        }
+        true
     }
 }
 
@@ -297,5 +361,112 @@ impl fmt::Display for Board {
 
 #[cfg(test)]
 mod test {
+    use super::*;
 
+    #[test]
+    fn check_new_board() {
+        let b = Board::new();
+        assert_eq!(
+            b.table,
+            [
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', 'X']
+            ]
+        );
+    }
+
+    #[test]
+    fn check_some_dates() {
+        let mut b: Board = Board::new();
+        b.set_date(1, 1, 1);
+        assert_eq!(
+            b.table,
+            [
+                ['X', '0', '0', '0', 'X', '0', '0', 'X', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', 'X']
+            ]
+        );
+
+        b = Board::new();
+        b.set_date(4, 13, 8);
+        assert_eq!(
+            b.table,
+            [
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', 'X', '0', '0', 'X', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['X', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', 'X']
+            ]
+        );
+
+        b = Board::new();
+        b.set_date(7, 14, 12);
+        assert_eq!(
+            b.table,
+            [
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', 'X'],
+                ['0', '0', '0', 'X', '0', '0', '0', 'X', 'X']
+            ]
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn wrong_date() {
+        let mut b: Board = Board::new();
+        b.set_date(8, 1, 1);
+    }
+
+    #[test]
+    fn solvable() {
+        let mut b: Board = Board::new();
+        b.set_date(1, 2, 3);
+        assert_eq!(true, b.is_solvable());
+        assert_eq!(
+            b.table,
+            [
+                ['0', '0', 'X', '0', '0', 'X', '0', 'X', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', '0', '0', '0', '0', 'X']
+            ]
+        );
+
+        b.table = [
+            ['0', '0', '0', '0', 'j', '0', '0', '0', '0'],
+            ['0', '0', '0', '0', 'j', 'j', 'j', 'j', '0'],
+            ['w', 'w', 'w', '0', 'X', '0', '0', 'X', '0'],
+            ['0', '0', 'w', '0', 'f', '0', '0', '0', '0'],
+            ['X', '0', 'w', 'f', '0', '0', '0', '0', '0'],
+            ['0', '0', 'f', 'f', 'f', '0', '0', '0', 'X'],
+        ];
+        assert_eq!(true, b.is_solvable());
+        assert_eq!(
+            b.table,
+            [
+                ['0', '0', '0', '0', 'j', '0', '0', '0', '0'],
+                ['0', '0', '0', '0', 'j', 'j', 'j', 'j', '0'],
+                ['w', 'w', 'w', '0', 'X', '0', '0', 'X', '0'],
+                ['0', '0', 'w', '0', 'f', '0', '0', '0', '0'],
+                ['X', '0', 'w', 'f', '0', '0', '0', '0', '0'],
+                ['0', '0', 'f', 'f', 'f', '0', '0', '0', 'X'],
+            ]
+        );
+    }
 }
