@@ -1,14 +1,47 @@
-pub mod board;
-pub mod piece;
+use chrono::Datelike;
+use dateparser::parse;
+use std::io;
+
+mod board;
+mod piece;
 
 fn main() {
     let mut board = board::Board::new();
     let mut pieces = piece::all_pieces();
 
-    board.set_date(4, 13, 8);
+    let (week_day, day, month) = get_date();
 
-    let _result = try_placing_pieces(&mut board, &mut pieces);
-    
+    board.set_date(week_day, day, month);
+
+    let success = try_placing_pieces(&mut board, &mut pieces);
+    if !success {
+        println!("Could not find a solution!");
+    }
+}
+
+fn get_date() -> (u8, u8, u8) {
+    let mut input: String = String::new();
+    loop {
+        println!("What day would you like to solve for?");
+        io::stdin().read_line(&mut input).unwrap_or_else(|error| {
+            panic!("Could not read from input {error}");
+        });
+        let result = match parse(&input.trim()) {
+            Ok(d) => {
+                println!("That was a {}", d.weekday());
+                (
+                    d.weekday().number_from_monday() as u8,
+                    d.day() as u8,
+                    d.month() as u8,
+                )
+            }
+            Err(error) => {
+                println!("Could not parse the data {}, got [{}]", error.to_string(), input);
+                continue;
+            }
+        };
+        return result;
+    }
 }
 
 fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bool {
@@ -28,7 +61,7 @@ fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bo
             for oriented_piece in orientations {
                 if b.place_piece_on_top_left(&oriented_piece) {
                     //println!("Now:\n {:?}", b.table);
-                    
+
                     pieces.remove(piece_index);
                     if try_placing_pieces(b, pieces) {
                         return true;
