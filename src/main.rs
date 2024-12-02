@@ -2,6 +2,7 @@ use chrono::Datelike;
 use dateparser::parse;
 use std::io;
 use std::time::Instant;
+use termion;
 
 mod board;
 mod piece;
@@ -21,6 +22,7 @@ fn main() {
 
     let elapsed = now.elapsed();
     
+    print!("{}{}", termion::clear::All, termion::cursor::Goto(1, 1));
     println!("Got {} solutions", solutions.len());
     for s in solutions {
         println!("{s}");
@@ -64,6 +66,7 @@ fn try_placing_pieces<'a>(
     pieces: &mut Vec<char>,
     solutions: &mut Vec<board::Board>,
 ) {
+    print!("{}{}{b}", termion::clear::All, termion::cursor::Goto(1, 1));
     if b.is_full() {
         return;
     } else {
