@@ -9,6 +9,7 @@ mod piece;
 fn main() {
     let mut board = board::Board::new();
     let mut pieces = piece::all_pieces();
+    let mut solutions: Vec<board::Board> = Vec::new();
 
     let (week_day, day, month) = get_date();
 
@@ -16,9 +17,14 @@ fn main() {
 
     let now = Instant::now();
 
-    let _ = try_placing_pieces(&mut board, &mut pieces);
+    let _ = try_placing_pieces(&mut board, &mut pieces, &mut solutions);
 
     let elapsed = now.elapsed();
+    
+    println!("Got {} solutions", solutions.len());
+    for s in solutions {
+        println!("{s}");
+    }
     println!("Solved in {} ms", elapsed.as_millis());
 }
 
@@ -39,7 +45,11 @@ fn get_date() -> (u8, u8, u8) {
                 )
             }
             Err(error) => {
-                println!("Could not parse the data {}, got [{}]", error.to_string(), input);
+                println!(
+                    "Could not parse the data {}, got [{}]",
+                    error.to_string(),
+                    input
+                );
                 continue;
             }
         };
@@ -47,16 +57,15 @@ fn get_date() -> (u8, u8, u8) {
     }
 }
 
-const CHECK_FOR_SOLVABILITY_THRESH : usize = 5;
+const CHECK_FOR_SOLVABILITY_THRESH: usize = 5;
 
-fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bool {
+fn try_placing_pieces<'a>(
+    b: &'a mut board::Board,
+    pieces: &mut Vec<char>,
+    solutions: &mut Vec<board::Board>,
+) {
     if b.is_full() {
-        if pieces.is_empty() {
-            println!("Found a solution:\n{}", b);
-            return true;
-        } else {
-            panic!("Board is full but there are still pieces to place");
-        }
+        return;
     } else {
         for piece_index in 0..pieces.len() {
             let this_piece = pieces[piece_index];
@@ -65,10 +74,9 @@ fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bo
                 .possible_pieces;
             for oriented_piece in orientations {
                 if b.place_piece_on_top_left(&oriented_piece) {
-                    //println!("Now:\n {:?}", b.table);
 
                     if b.is_full() {
-                        println!("Found a solution:\n{}", b);
+                        solutions.push(b.clone());
                         b.remove_piece(this_piece);
                         continue;
                     }
@@ -79,16 +87,13 @@ fn try_placing_pieces<'a>(b: &'a mut board::Board, pieces: &mut Vec<char>) -> bo
                     }
 
                     pieces.remove(piece_index);
-                    if try_placing_pieces(b, pieces) {
-                        return true;
-                    } else {
-                        pieces.insert(piece_index, this_piece);
-                        b.remove_piece(this_piece);
-                        //println!("Then:\n {:?}", b.table);
-                    }
+                    try_placing_pieces(b, pieces, solutions);
+
+                    pieces.insert(piece_index, this_piece);
+                    b.remove_piece(this_piece);
                 }
             }
         }
-        return false;
+        return;
     }
 }
